@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北科附工學習中心 排課系統</title>
+    <title>北科附工資源中心排課系統</title>
     <style>
         :root {
             --primary: #2c3e50;
@@ -25,12 +25,23 @@
         header {
             background: linear-gradient(135deg, var(--primary), #34495e);
             color: white;
-            padding: 22px;
+            padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        h1, h2, h3, h4 { margin: 0 0 10px 0; }
+        header h1 { margin: 0; font-size: 24px; }
+        .header-controls { display: flex; gap: 10px; align-items: center; }
+        .semester-select { width: auto; padding: 6px 12px; font-size: 14px; font-weight: bold; border-radius: 4px; border: none; background: white; color: var(--primary); cursor: pointer; }
+        .btn-sync { width: auto; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-export { background-color: #e67e22; }
+        .btn-export:hover { background-color: #d35400; }
+        .btn-import { background-color: #16a085; }
+        .btn-import:hover { background-color: #11806a; }
+
         .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 1200px) { .grid { grid-template-columns: 450px 1fr; } }
         
@@ -53,12 +64,10 @@
         button.btn-success { background-color: var(--success); }
         button.btn-success:hover { background-color: #27ae60; }
         
-        /* 老師科目多選區 */
         .sub-checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 10px; border: 1px solid #ddd; padding: 8px; border-radius: 4px; background: #fff; max-height: 180px; overflow-y: auto; }
         .sub-checkbox-grid label { font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
         .sub-checkbox-grid input { width: auto; }
 
-        /* 可拖曳科目方塊區 */
         .drag-source-container { background: #fdfefe; border: 2px dashed #bdc3c7; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
         .drag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
         .drag-item {
@@ -66,7 +75,6 @@
         }
         .drag-item:active { cursor: grabbing; transform: scale(0.95); }
 
-        /* 科目切換分頁標籤 */
         .tab-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         .tab-btn {
             padding: 8px 14px; background-color: #bdc3c7; color: #2c3e50; font-weight: bold; border-radius: 4px 4px 0 0; width: auto; font-size: 13px;
@@ -78,7 +86,6 @@
         }
         .sub-tab-btn.active { background-color: #4b5563; color: white; font-weight: bold; }
 
-        /* 學生拖曳功課表 */
         .mini-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 10px; font-size: 11px; text-align: center; }
         .mini-cell { border: 1px solid #ccc; padding: 6px 2px; background: #fff; cursor: pointer; user-select: none; border-radius: 3px; min-height: 28px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: normal; box-sizing: border-box; }
         .mini-cell.drag-hover { border: 2px dashed var(--accent) !important; background-color: #ebf5fb !important; }
@@ -92,9 +99,7 @@
         .student-edit-btn:hover { color: var(--accent); font-weight: bold; }
 
         .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; color: white; display: inline-block; margin: 1px; }
-        .bg-sub { background-color: #7f8c8d; color: white; }
         
-        /* 大課表樣式 */
         .timetable { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; margin-bottom: 10px; }
         .timetable th, .timetable td { border: 1px solid #ddd; padding: 6px; vertical-align: top; text-align: left; }
         .timetable th { background-color: #eaeded; font-weight: bold; text-align: center; }
@@ -111,13 +116,11 @@
         .del-class { position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; background: var(--danger); color: white; border-radius: 50%; border: none; padding: 0; line-height: 12px; text-align: center; cursor: pointer; font-size: 10px; }
         .room-badge { background-color: #4b5563; color: white; padding: 1px 4px; border-radius: 3px; font-size: 10px; display: inline-block; margin-top: 2px; }
 
-        /* 輸出列印專區樣式 */
         .print-section-title { margin-top: 40px; padding-top: 20px; border-top: 3px double #ccc; }
         .print-preview-card { background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin-top: 15px; display: none; }
         .print-preview-card.active { display: block; }
         .print-preview-card h4 { border-left: 5px solid var(--accent); padding-left: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
         
-        /* 彈出視窗 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 650px; max-height: 85vh; overflow-y: auto; }
         .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
@@ -144,14 +147,22 @@
 
 <div class="container">
     <header class="no-print">
-        <h1>🏫 北科附工學習中心 排課系統</h1>
-        <p>智慧自動媒合：僅顯示能上該節科目之特教教師。學生個人課表全面正名為「學習中心課表」。</p>
+        <h1>🏫 北科附工資源中心排課系統</h1>
+        <div class="header-controls">
+            <select id="semesterSelect" class="semester-select" onchange="switchSemester()">
+                <option value="115-1">115 學年度 第一學期</option>
+                <option value="115-2">115 學年度 第二學期</option>
+                <option value="116-1">116 學年度 第一學期</option>
+                <option value="116-2">116 學年度 第二學期</option>
+            </select>
+            <button class="btn-sync btn-export" onclick="exportData()">💾 匯出目前進度檔</button>
+            <button class="btn-sync btn-import" onclick="triggerImportInput()">📂 匯入進度檔</button>
+            <input type="file" id="importFileInput" accept=".json, .txt" style="display:none;" onchange="importData(event)">
+        </div>
     </header>
 
     <div class="grid">
-        <!-- 左側設定 -->
         <div class="no-print">
-            <!-- 老師管理 -->
             <div class="card">
                 <h3>1. 特教教師管理</h3>
                 <div style="margin-bottom:8px;">
@@ -163,7 +174,6 @@
                 <div class="list-container" id="teacherList"></div>
             </div>
 
-            <!-- 學生管理 -->
             <div class="card">
                 <h3>2. 學生原班抽離設定 (拖曳排課面板)</h3>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-bottom: 8px;">
@@ -171,7 +181,6 @@
                     <input type="text" id="sGrade" placeholder="輸入班級 (如：動力一、園藝三)">
                 </div>
                 
-                <!-- 拖曳科目來源區 -->
                 <div class="drag-source-container">
                     <div style="font-size:12px; font-weight:bold; color:#2c3e50; margin-bottom:6px;">👇 請按住科目滑鼠拖曳，拉進下方功課表空格中：</div>
                     <div class="drag-grid" id="dragSourceGrid"></div>
@@ -189,10 +198,8 @@
             </div>
         </div>
 
-        <!-- 右側主看板 -->
         <div id="mainPanel">
             <div class="card main-panel-card">
-                <!-- 分科分頁切換紐 -->
                 <div class="tab-container no-print" id="mainTabContainer"></div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -217,7 +224,6 @@
         </div>
     </div>
 
-    <!-- 底下列印與獨立預覽專區 -->
     <div class="print-section-title no-print">
         <h2>🖨️ 課表輸出與列印專區</h2>
         
@@ -237,7 +243,6 @@
     <div id="printOutputArea" class="print-container"></div>
 </div>
 
-<!-- 排課彈出視窗 -->
 <div class="modal" id="scheduleModal">
     <div class="modal-content">
         <h3 id="modalTitle">排課設定</h3>
@@ -282,9 +287,11 @@
     };
     const pastelColors = ["#ffeaa7", "#fab1a0", "#74b9ff", "#ff7675", "#fd79a8", "#ffe3e3", "#ffb8b8", "#d6a2e8", "#81ecec", "#00cec9", "#55efc4", "#00b894", "#b2bec3", "#ffeaa7"];
 
+    let currentSemester = "115-1";
     let teachers = [];
     let students = [];
     let classes = []; 
+    
     let tempSchedule = {};
     let currentTabFilter = 'all'; 
     let currentPrintMainGroup = 'subs'; 
@@ -309,11 +316,102 @@
         initMainTabButtons();
         initDragSourceGrid();
         initMiniSchedule();
+        
+        loadSemesterData();
+        
+        if(allSubjects.length > 0) currentPrintActiveId = `print-card-sub-${allSubjects[0]}`;
+    };
+
+    function loadSemesterData() {
+        currentSemester = document.getElementById('semesterSelect').value;
+        const saved = localStorage.getItem(`resource_center_data_${currentSemester}`);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                teachers = parsed.teachers || [];
+                students = parsed.students || [];
+                classes = parsed.classes || [];
+            } catch(e) {
+                teachers = []; students = []; classes = [];
+            }
+        } else {
+            teachers = []; students = []; classes = [];
+        }
+        cancelEditStudent();
+        updateHours();
         renderTeachers();
         renderStudents();
         renderMainTimetable();
-        if(allSubjects.length > 0) currentPrintActiveId = `print-card-sub-${allSubjects[0]}`;
-    };
+    }
+
+    function saveSemesterData() {
+        const dataObj = { teachers, students, classes };
+        localStorage.setItem(`resource_center_data_${currentSemester}`, JSON.stringify(dataObj));
+    }
+
+    function switchSemester() {
+        loadSemesterData();
+    }
+
+    function getSelectedSemesterText() {
+        const selectEl = document.getElementById('semesterSelect');
+        if (selectEl && selectEl.options[selectEl.selectedIndex]) {
+            return selectEl.options[selectEl.selectedIndex].text;
+        }
+        return "115 學年度 第一學期";
+    }
+
+    function exportData() {
+        const dataObj = {
+            semester: currentSemester,
+            teachers: teachers,
+            students: students,
+            classes: classes
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `北科附工資源中心排課進度_${currentSemester}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function triggerImportInput() {
+        document.getElementById('importFileInput').click();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const parsed = JSON.parse(e.target.result);
+                if (confirm(`偵測到「${parsed.semester || '未知'}」學期的排課資料，確定要將它匯入目前網頁中並覆蓋現有畫面嗎？`)) {
+                    if (parsed.semester) {
+                        document.getElementById('semesterSelect').value = parsed.semester;
+                        currentSemester = parsed.semester;
+                    }
+                    teachers = parsed.teachers || [];
+                    students = parsed.students || [];
+                    classes = parsed.classes || [];
+                    
+                    saveSemesterData();
+                    updateHours();
+                    renderTeachers();
+                    renderStudents();
+                    renderMainTimetable();
+                    alert('資料匯入同步成功！');
+                }
+            } catch (err) {
+                alert('檔案格式錯誤，無法正確讀取進度檔。');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
 
     function initTeacherSubjectsForm() {
         const grid = document.getElementById('teacherSubjectsGrid');
@@ -414,13 +512,13 @@
         document.getElementById('tName').value = '';
         document.querySelectorAll('input[name="tSubsSelect"]').forEach(cb => cb.checked = false);
         
-        updateHours(); renderTeachers(); renderMainTimetable();
+        saveSemesterData(); updateHours(); renderTeachers(); renderMainTimetable();
     }
 
     function deleteTeacher(id) {
         teachers = teachers.filter(t => t.id !== id);
         classes = classes.filter(c => c.teacherId !== id);
-        updateHours(); renderTeachers(); renderMainTimetable();
+        saveSemesterData(); updateHours(); renderTeachers(); renderMainTimetable();
     }
 
     function renderTeachers() {
@@ -458,7 +556,7 @@
             document.getElementById('sGrade').value = '';
             clearMiniTable();
         }
-        renderStudents(); renderMainTimetable();
+        saveSemesterData(); renderStudents(); renderMainTimetable();
     }
 
     function editStudent(id) {
@@ -507,7 +605,7 @@
         classes.forEach(c => c.studentIds = c.studentIds.filter(sid => sid !== id));
         classes = classes.filter(c => c.studentIds.length > 0);
         if(document.getElementById('editingStudentId').value === id) cancelEditStudent();
-        updateHours(); renderTeachers(); renderStudents(); renderMainTimetable();
+        saveSemesterData(); updateHours(); renderTeachers(); renderStudents(); renderMainTimetable();
     }
 
     function renderStudents() {
@@ -592,7 +690,7 @@
     function deleteClass(id, e) {
         if(e) e.stopPropagation();
         classes = classes.filter(c => c.id !== id);
-        updateHours(); renderTeachers(); renderMainTimetable();
+        saveSemesterData(); updateHours(); renderTeachers(); renderMainTimetable();
     }
 
     function openScheduleModal(day, period) {
@@ -698,7 +796,7 @@
                 id: 'c_' + Date.now(), day: curDay, period: curPeriod, teacherId: tId, subject: sub, studentIds: sIds, room: roomVal
             });
         }
-        updateHours(); renderTeachers(); renderMainTimetable(); closeModal();
+        saveSemesterData(); updateHours(); renderTeachers(); renderMainTimetable(); closeModal();
     }
 
     function closeModal() { document.getElementById('scheduleModal').style.display = 'none'; }
@@ -748,6 +846,8 @@
         
         out.innerHTML = ''; subTabsContainer.innerHTML = ''; teacherTabsContainer.innerHTML = ''; studentTabsContainer.innerHTML = '';
 
+        const semText = getSelectedSemesterText();
+
         // 1. 各學科總表
         allSubjects.forEach(sub => {
             let cardId = `print-card-sub-${sub}`;
@@ -757,10 +857,10 @@
             let html = `
                 <div class="print-preview-card ${isBtnActive?'active':''}" id="${cardId}">
                     <h4>
-                        <span>📘 ${sub} 抽離學科整體總表</span>
+                        <span>📘 ${semText} — ${sub} 抽離學科整體總表</span>
                         <button class="no-print" onclick="printSingleTable('${cardId}')" style="width:auto; padding:4px 12px; background:#8e44ad; font-size:12px;">🖨️ 單獨列印此表</button>
                     </h4>
-                    <div class="print-single-only" style="font-weight:bold; font-size:18px; margin-bottom:10px; text-align:center;">特教抽離班學科總課表 ——— 【${sub} 總表】</div>
+                    <div class="print-single-only" style="font-weight:bold; font-size:18px; margin-bottom:10px; text-align:center;">${semText} 特教抽離班學科總課表 ——— 【${sub} 總表】</div>
                     <table class="timetable">
                         <thead><tr><th style="width:100px;">節次</th><th>週一</th><th>週二</th><th>週三</th><th>週四</th><th>週五</th></tr></thead>
                         <tbody>`;
@@ -795,10 +895,10 @@
             let html = `
                 <div class="print-preview-card ${isBtnActive?'active':''}" id="${cardId}">
                     <h4>
-                        <span>👨‍🏫 ${t.name} 老師個人課表</span>
+                        <span>👨‍🏫 ${semText} — ${t.name} 老師個人課表</span>
                         <button class="no-print" onclick="printSingleTable('${cardId}')" style="width:auto; padding:4px 12px; background:#8e44ad; font-size:12px;">🖨️ 單獨列印此表</button>
                     </h4>
-                    <div class="print-single-only" style="font-weight:bold; font-size:18px; margin-bottom:10px; text-align:center;">特教抽離班任課教師課表 ——— 【${t.name} 老師】</div>
+                    <div class="print-single-only" style="font-weight:bold; font-size:18px; margin-bottom:10px; text-align:center;">${semText} 特教抽離班任課教師課表 ——— 【${t.name} 老師】</div>
                     <table class="timetable">
                         <thead><tr><th style="width:100px;">節次</th><th>週一</th><th>週二</th><th>週三</th><th>週四</th><th>週五</th></tr></thead>
                         <tbody>`;
@@ -823,7 +923,7 @@
             if(currentPrintMainGroup === 'teachers') out.innerHTML += html;
         });
 
-        // 3. 學生個人課表
+        // 3. 學生個人課表 (已移除小標題中重複的學期資訊)
         students.forEach(s => {
             let cardId = `print-card-student-${s.id}`;
             let isBtnActive = (currentPrintActiveId === cardId && currentPrintMainGroup === 'students');
@@ -832,11 +932,11 @@
             let html = `
                 <div class="print-preview-card ${isBtnActive?'active':''}" id="${cardId}">
                     <h4>
-                        <span>🎓 學習中心課表 — 【${s.grade} ${s.name}】</span>
+                        <span>🎓 ${semText} — 學習中心課表 — 【${s.grade} ${s.name}】</span>
                         <button class="no-print" onclick="printSingleTable('${cardId}')" style="width:auto; padding:4px 12px; background:#8e44ad; font-size:12px;">🖨️ 單獨列印此課表</button>
                     </h4>
                     <div class="print-single-only" style="font-weight:bold; font-size:22px; margin-bottom:12px; text-align:center; letter-spacing: 2px;">學習中心課表</div>
-                    <div style="margin-bottom:10px; font-size:14px; text-align:center;"><strong>原班班級：</strong>${s.grade} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>學生姓名：</strong>${s.name}</div>
+                    <div style="margin-bottom:10px; font-size:14px; text-align:center;"><strong>原班班級：</strong>${s.grade} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>學生姓名：</strong>${s.name}</div>
                     <table class="timetable">
                         <thead><tr><th style="width:100px;">節次</th><th>週一</th><th>週二</th><th>週三</th><th>週四</th><th>週五</th></tr></thead>
                         <tbody>`;
