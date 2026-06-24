@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>特教抽離班排課管理系統</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --light: #f8f9fa;
+        }
+        body {
+            font-family: Arial, "Noto Sans TC", sans-serif;
+            background-color: #f4f6f9;
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.4;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        header {
+            background: linear-gradient(135deg, var(--primary), #34495e);
+            color: white;
+            padding: 22px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3, h4 { margin: 0 0 10px 0; }
+        .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 1100px) { .grid { grid-template-columns: 380px 1fr; } }
+        
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        input, select, button {
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
+        }
+        button {
+            background-color: var(--accent); color: white; font-weight: bold; border: none; cursor: pointer;
+        }
+        button:hover { background-color: #2980b9; }
+        button.btn-danger { background-color: var(--danger); }
+        button.btn-danger:hover { background-color: #c0392b; }
+        button.btn-success { background-color: var(--success); }
+        button.btn-success:hover { background-color: #27ae60; }
+        
+        /* 科目切換分頁標籤 */
+        .tab-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 10px 20px; background-color: #bdc3c7; color: #2c3e50; font-weight: bold; border-radius: 4px 4px 0 0; width: auto;
+        }
+        .tab-btn.active { background-color: var(--accent); color: white; }
+        .tab-btn.active.tab-國文 { background-color: #fdcb6e; color: #2d3436; }
+        .tab-btn.active.tab-英文 { background-color: #00cec9; color: white; }
+        .tab-btn.active.tab-數學 { background-color: #ff7675; color: white; }
+
+        /* 下方列印專區專用次級按鈕 */
+        .sub-tab-btn {
+            padding: 6px 14px; background-color: #e5e7eb; color: #374151; font-weight: normal; border-radius: 20px; width: auto; font-size: 13px; border: 1px solid #d1d5db;
+        }
+        .sub-tab-btn.active { background-color: #4b5563; color: white; font-weight: bold; }
+
+        /* 學生迷你功課表 */
+        .mini-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 10px; font-size: 11px; text-align: center; }
+        .mini-cell { border: 1px solid #ddd; padding: 4px; background: #fff; cursor: pointer; user-select: none; border-radius: 2px; }
+        .mini-cell.sel-國文 { background-color: #ffeaa7; color: #d63031; font-weight: bold; }
+        .mini-cell.sel-英文 { background-color: #81ecec; color: #0984e3; font-weight: bold; }
+        .mini-cell.sel-數學 { background-color: #fab1a0; color: #e17055; font-weight: bold; }
+        .mini-cell.lunch-title { background-color: #f2f4f4; color: #7f8c8d; font-weight: bold; }
+        
+        .list-container { max-height: 220px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 4px; background: var(--light); }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #ddd; font-size: 13px; }
+        
+        .student-edit-btn { background: none; color: var(--primary); text-align: left; padding: 0; font-weight: normal; width: auto; display: inline; cursor: pointer; text-decoration: underline; }
+        .student-edit-btn:hover { color: var(--accent); font-weight: bold; }
+
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; color: white; display: inline-block; }
+        .bg-國文 { background-color: #fdcb6e; color: #2d3436; }
+        .bg-英文 { background-color: #00cec9; color: white; }
+        .bg-數學 { background-color: #ff7675; color: white; }
+        
+        /* 大課表樣式 */
+        .timetable { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; margin-bottom: 10px; }
+        .timetable th, .timetable td { border: 1px solid #ddd; padding: 6px; vertical-align: top; text-align: left; }
+        .timetable th { background-color: #eaeded; font-weight: bold; text-align: center; }
+        .timetable td.time-col { background-color: #eaeded; font-weight: bold; width: 90px; text-align: center; vertical-align: middle; font-size: 13px; }
+        .timetable td:hover:not(.time-col) { background-color: #fcfcfc; cursor: pointer; }
+        
+        /* 午休列特殊底色 */
+        .lunch-row { background-color: #fafbfc; }
+        .lunch-row td.time-col { background-color: #e5e8e8; color: #566573; }
+
+        .stu-tag { font-size: 11px; padding: 1px 4px; margin: 1px; border-radius: 3px; display: inline-block; background: #f0f3f4; border: 1px solid #ccc; }
+        .stu-tag.has-assigned { border-left: 4px solid var(--success); background: #e8f8f5; }
+        
+        .assigned-box { border: 1px solid rgba(0,0,0,0.15); border-radius: 4px; padding: 6px; margin-top: 5px; font-size: 11px; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .del-class { position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; background: var(--danger); color: white; border-radius: 50%; border: none; padding: 0; line-height: 12px; text-align: center; cursor: pointer; font-size: 10px; }
+        
+        /* 輸出列印專區樣式 */
+        .print-section-title { margin-top: 40px; padding-top: 20px; border-top: 3px double #ccc; }
+        .print-preview-card { background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin-top: 15px; display: none; }
+        .print-preview-card.active { display: block; }
+        .print-preview-card h4 { border-left: 5px solid var(--accent); padding-left: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        
+        /* 彈出視窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 650px; max-height: 85vh; overflow-y: auto; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .stu-select-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-top: 5px; }
+
+        /* 瀏覽器列印專用 */
+        @media print {
+            body { background-color: white; padding: 0; }
+            .no-print, header, .grid > div:first-child, .del-class, .modal, .tab-container, .print-tabs-wrapper { display: none !important; }
+            .grid { grid-template-columns: 1fr !important; }
+            .card { border: none; box-shadow: none; padding: 0; }
+            .timetable td { height: auto; min-height: 60px; }
+            .assigned-box { background: #fff !important; border: 1px solid #000 !important; color: #000 !important; }
+            .stu-tag { border: 1px solid #666 !important; background: #fff !important; color: #000 !important; }
+            .stu-tag.has-assigned { border-left: 5px solid #000 !important; font-weight: bold; }
+            .print-preview-card { display: none !important; border: none; padding: 0; }
+            .print-preview-card.currently-printing { display: block !important; }
+            .print-single-only { display: block !important; }
+            .print-target-active .main-panel-card { display: none !important; }
+        }
+        .print-single-only { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="no-print">
+        <h1>🏫 國立高級職業學校 特教抽離班排課管理系統</h1>
+        <p>提供多功能分科排課看版、全日排課調度（含午休、第八節、第九節時段），與個別任課教師暨學科總表之獨立列印輸出功能。</p>
+    </header>
+
+    <div class="grid">
+        <div class="no-print">
+            <div class="card">
+                <h3>1. 特教教師管理</h3>
+                <div style="display:grid; grid-template-columns: 2fr 2fr 1fr; gap:4px; margin-bottom:10px;">
+                    <input type="text" id="tName" placeholder="姓名">
+                    <select id="tSub">
+                        <option value="國文">國文</option>
+                        <option value="英文">英文</option>
+                        <option value="數學">數學</option>
+                    </select>
+                    <button onclick="addTeacher()">新增</button>
+                </div>
+                <div class="list-container" id="teacherList"></div>
+            </div>
+
+            <div class="card">
+                <h3>2. 學生原班抽離設定</h3>
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:4px; margin-bottom: 5px;">
+                    <input type="text" id="sName" placeholder="學生姓名">
+                    <select id="sGrade">
+                        <option value="高一">高一</option>
+                        <option value="高二">高二</option>
+                        <option value="高三">高三</option>
+                    </select>
+                </div>
+                <input type="hidden" id="editingStudentId" value="">
+                <div class="mini-grid" id="miniSchedule"></div>
+                <button onclick="addStudent()" id="submitStudentBtn" style="margin-top:10px;" class="btn-success">新增 / 更新學生資料</button>
+                <button onclick="cancelEditStudent()" id="cancelEditBtn" style="margin-top:5px; display:none; background-color:#95a5a6;">取消修改</button>
+                
+                <h4 style="margin:15px 0 5px 0;">學生名單 (<span id="sCount">0</span> 人)</h4>
+                <div class="list-container" id="studentList"></div>
+            </div>
+        </div>
+
+        <div id="mainPanel">
+            <div class="card main-panel-card">
+                <div class="tab-container no-print">
+                    <button class="tab-btn active" onclick="switchTab('all', this)">顯示全科看板</button>
+                    <button class="tab-btn tab-國文" onclick="switchTab('國文', this)">國文科排課看板</button>
+                    <button class="tab-btn tab-英文" onclick="switchTab('英文', this)">英文科排課看板</button>
+                    <button class="tab-btn tab-數學" onclick="switchTab('數學', this)">數學科排課看板</button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 id="mainTimetableTitle">📅 全校學生抽離課主看板 (目前：全科)</h3>
+                    <button class="no-print" onclick="window.print()" style="width: auto; background-color: #8e44ad; padding: 8px 16px;">🖨️ 列印目前看板畫面</button>
+                </div>
+                
+                <table class="timetable">
+                    <thead>
+                        <tr>
+                            <th style="width:100px;">節次 / 時間</th>
+                            <th>週一</th>
+                            <th>週二</th>
+                            <th>週三</th>
+                            <th>週四</th>
+                            <th>週五</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mainTimetable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="print-section-title no-print">
+        <h2>🖨️ 課表輸出與列印專區 (分頁快選版)</h2>
+        <p style="font-size:14px; color:#666; margin: 5px 0 15px 0;">請點選下方按鈕直接切換預覽特定科目或老師的課表，並可一鍵單獨列印。</p>
+        
+        <div class="print-tabs-wrapper" style="background:#eaeded; padding:15px; border-radius:6px; border:1px solid #ccc;">
+            <div class="tab-container" style="margin-bottom:10px;">
+                <button class="tab-btn tab-國文 active" id="pTabBtn-sub-國文" onclick="switchPrintGroup('sub-國文')">📘 國文科總表</button>
+                <button class="tab-btn tab-英文" id="pTabBtn-sub-英文" onclick="switchPrintGroup('sub-英文')">🟢 英文科總表</button>
+                <button class="tab-btn tab-數學" id="pTabBtn-sub-數學" onclick="switchPrintGroup('sub-數學')">🔴 數學科總表</button>
+                <button class="tab-btn" id="pTabBtn-teachers" style="background-color:#9b59b6; color:white;" onclick="switchPrintGroup('teachers')">👨‍🏫 任課教師個人課表...</button>
+            </div>
+            <div id="printTeacherSubTabs" class="tab-container" style="display:none; margin-top:5px; padding-top:5px; border-top:1px dashed #bbb;">
+                </div>
+        </div>
+    </div>
+
+    <div id="printOutputArea" class="print-container">
+        </div>
+</div>
+
+<div class="modal" id="scheduleModal">
+    <div class="modal-content">
+        <h3 id="modalTitle">排課設定</h3>
+        <hr>
+        <div style="margin-bottom:15px;">
+            <label style="font-weight:bold;">1. 選擇特教任課老師：</label>
+            <select id="modalTeacher" onchange="onModalTeacherChange()">
+                </select>
+        </div>
+        <div>
+            <label style="font-weight:bold;">2. 選擇此節要抽離的學生：</label>
+            <div style="font-size:12px; color:#e67e22; margin: 3px 0;" id="subjectHint">請先選擇老師以媒合對應科目學生</div>
+            <div class="stu-select-grid" id="modalStuGrid">
+                </div>
+        </div>
+        <div class="modal-buttons">
+            <button onclick="saveClass()" style="background-color: var(--success);">確定排入此組合</button>
+            <button class="btn-danger" onclick="closeModal()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let teachers = [];
+    let students = [];
+    let classes = []; 
+    let tempSchedule = {};
+    let currentTabFilter = 'all'; 
+    let currentPrintActiveId = 'print-card-sub-國文'; 
+
+    const days = ['一', '二', '三', '四', '五'];
+    // 擴充時段：加入 8 與 9 節
+    const periodKeys = ["1", "2", "3", "4", "L", "5", "6", "7", "8", "9"]; 
+    const timeLabelsMap = {
+        "1": "第一節<br><small>08:10-09:00</small>",
+        "2": "第二節<br><small>09:10-10:00</small>",
+        "3": "第三節<br><small>10:10-11:00</small>",
+        "4": "第四節<br><small>11:10-12:00</small>",
+        "L": "午休<br><small>12:10-13:00</small>",
+        "5": "第五節<br><small>13:10-14:00</small>",
+        "6": "第六節<br><small>14:15-15:05</small>",
+        "7": "第七節<br><small>15:15-16:05</small>",
+        "8": "第八節<br><small>16:10-17:00</small>",
+        "9": "第九節<br><small>17:05-17:55</small>"
+    };
+
+    let curDay = 0;
+    let curPeriod = "1";
+    const pastelColors = ['#ffd1dc','#caf0f8','#d8f3dc','#ffe5d9','#ffcad4','#f0e6ef','#e2ece9','#fceade','#eef1f6','#e4f0ec'];
+
+    window.onload = function() {
+        initMiniSchedule();
+        renderTeachers();
+        renderStudents();
+        renderMainTimetable();
+    };
+
+    function switchTab(filter, btn) {
+        currentTabFilter = filter;
+        document.querySelectorAll('.tab-container:first-child .tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const titleMap = { 'all': '全科', '國文': '國文科', '英文': '英文科', '數學': '數學科' };
+        document.getElementById('mainTimetableTitle').innerText = `📅 全校學生抽離課主看板 (目前：${titleMap[filter]})`;
+        renderMainTimetable();
+    }
+
+    function initMiniSchedule() {
+        const container = document.getElementById('miniSchedule');
+        container.innerHTML = '<div></div>';
+        days.forEach(d => container.innerHTML += `<div style="font-weight:bold;">週${d}</div>`);
+        
+        periodKeys.forEach(p => {
+            if(p === "L") {
+                container.innerHTML += `<div class="lunch-title">午休</div>`;
+            } else {
+                container.innerHTML += `<div style="font-weight:bold;">第${p}節</div>`;
+            }
+            for(let d=1; d<=5; d++) {
+                const key = `${d}-${p}`;
+                tempSchedule[key] = "";
+                container.innerHTML += `<div class="mini-cell" id="mini-${key}" onclick="toggleMiniCell('${key}')">--</div>`;
+            }
+        });
+    }
+
+    function toggleMiniCell(key) {
+        const cell = document.getElementById(`mini-${key}`);
+        const seq = ["", "國文", "英文", "數學"];
+        let idx = seq.indexOf(tempSchedule[key]);
+        let next = seq[(idx + 1) % seq.length];
+        tempSchedule[key] = next;
+        cell.className = `mini-cell ${next?'sel-'+next:''}`;
+        cell.innerText = next || "--";
+    }
+
+    function addTeacher() {
+        const name = document.getElementById('tName').value.trim();
+        const subject = document.getElementById('tSub').value;
+        if(!name) return alert('請輸入老師姓名');
+        const randomColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+        teachers.push({ id: 't_' + Date.now(), name, subject, hours:0, color: randomColor });
+        document.getElementById('tName').value = '';
+        updateHours();
+        renderTeachers();
+        renderMainTimetable();
+    }
+
+    function deleteTeacher(id) {
+        teachers = teachers.filter(t => t.id !== id);
+        classes = classes.filter(c => c.teacherId !== id);
+        updateHours();
+        renderTeachers();
+        renderMainTimetable();
+    }
+
+    function renderTeachers() {
+        const list = document.getElementById('teacherList');
+        list.innerHTML = '';
+        teachers.forEach(t => {
+            const isOk = t.hours >= 12 && t.hours <= 20;
+            list.innerHTML += `<div class="list-item" style="border-left: 6px solid ${t.color}; padding-left: 5px;">
+                <span><strong>${t.name}</strong> <span class="badge bg-${t.subject}">${t.subject}</span></span>
+                <div>
+                    <span class="badge" style="background:${isOk?'var(--success)':'#e67e22'}">${t.hours} 節</span>
+                    <button onclick="deleteTeacher('${t.id}')" class="btn-danger" style="width:auto; padding:2px 6px; font-size:11px;">刪除</button>
+                </div>
+            </div>`;
+        });
+    }
+
+    function addStudent() {
+        const name = document.getElementById('sName').value.trim();
+        const grade = document.getElementById('sGrade').value;
+        const editId = document.getElementById('editingStudentId').value;
+        if(!name) return alert('請輸入學生姓名');
+
+        if(editId) {
+            let s = students.find(st => st.id === editId);
+            if(s) { s.name = name; s.grade = grade; s.schedule = {...tempSchedule}; }
+            cancelEditStudent();
+        } else {
+            students.push({ id: 's_' + Date.now(), name, grade, schedule: {...tempSchedule} });
+            document.getElementById('sName').value = '';
+            clearMiniTable();
+        }
+        renderStudents();
+        renderMainTimetable();
+    }
+
+    function editStudent(id) {
+        let s = students.find(st => st.id === id);
+        if(!s) return;
+        document.getElementById('sName').value = s.name;
+        document.getElementById('sGrade').value = s.grade;
+        document.getElementById('editingStudentId').value = s.id;
+        document.getElementById('cancelEditBtn').style.display = 'block';
+        document.getElementById('submitStudentBtn').innerText = '儲存更新資料';
+        tempSchedule = {...s.schedule};
+        for(let k in tempSchedule) {
+            let val = tempSchedule[k];
+            let c = document.getElementById(`mini-${k}`);
+            if(c) { c.className = `mini-cell ${val?'sel-'+val:''}`; c.innerText = val || "--"; }
+        }
+    }
+
+    function cancelEditStudent() {
+        document.getElementById('sName').value = '';
+        document.getElementById('editingStudentId').value = '';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        document.getElementById('submitStudentBtn').innerText = '新增 / 更新學生資料';
+        clearMiniTable();
+    }
+
+    function clearMiniTable() {
+        for(let k in tempSchedule) {
+            tempSchedule[k] = "";
+            let c = document.getElementById(`mini-${k}`);
+            if(c) { c.className = "mini-cell"; c.innerText = "--"; }
+        }
+    }
+
+    function deleteStudent(id) {
+        students = students.filter(s => s.id !== id);
+        classes.forEach(c => c.studentIds = c.studentIds.filter(sid => sid !== id));
+        classes = classes.filter(c => c.studentIds.length > 0);
+        if(document.getElementById('editingStudentId').value === id) cancelEditStudent();
+        updateHours();
+        renderTeachers();
+        renderStudents();
+        renderMainTimetable();
+    }
+
+    function renderStudents() {
+        const list = document.getElementById('studentList');
+        list.innerHTML = '';
+        document.getElementById('sCount').innerText = students.length;
+        students.forEach(s => {
+            list.innerHTML += `<div class="list-item">
+                <span>[${s.grade}] <button class="student-edit-btn" onclick="editStudent('${s.id}')">${s.name}</button></span>
+                <button onclick="deleteStudent('${s.id}')" class="btn-danger" style="width:auto; padding:2px 6px; font-size:11px;">刪除</button>
+            </div>`;
+        });
+    }
+
+    function updateHours() {
+        teachers.forEach(t => t.hours = 0);
+        classes.forEach(c => {
+            let t = teachers.find(teach => teach.id === c.teacherId);
+            if(t) t.hours++;
+        });
+    }
+
+    function renderMainTimetable() {
+        const body = document.getElementById('mainTimetable');
+        body.innerHTML = '';
+        
+        periodKeys.forEach(p => {
+            let rowClass = (p === "L") ? 'class="lunch-row"' : '';
+            let row = `<tr ${rowClass}><td class="time-col">${timeLabelsMap[p]}</td>`;
+            
+            for(let d=1; d<=5; d++) {
+                const key = `${d}-${p}`;
+                let cellHtml = `<div style="min-height:95px;" onclick="openScheduleModal(${d},'${p}')">`;
+                
+                let neededStudents = students.filter(s => {
+                    if (currentTabFilter === 'all') return s.schedule[key] !== "";
+                    return s.schedule[key] === currentTabFilter;
+                });
+                
+                if(neededStudents.length > 0) {
+                    cellHtml += `<div class="no-print" style="font-size:10px; font-weight:bold; color:#7f8c8d; margin-bottom:3px;">需求學生 (${neededStudents.length})：</div>`;
+                    neededStudents.forEach(s => {
+                        const isAssigned = classes.some(c => c.day === d && c.period === p && c.studentIds.includes(s.id));
+                        cellHtml += `<span class="stu-tag ${isAssigned?'has-assigned':''}">
+                            ${s.name}(${s.schedule[key].charAt(0)})
+                        </span>`;
+                    });
+                }
+                
+                let slotClasses = classes.filter(c => {
+                    if (currentTabFilter === 'all') return c.day === d && c.period === p;
+                    let t = teachers.find(teach => teach.id === c.teacherId);
+                    return c.day === d && c.period === p && t && t.subject === currentTabFilter;
+                });
+                
+                if(slotClasses.length > 0) {
+                    if(neededStudents.length > 0) cellHtml += `<div class="no-print" style="margin-top:6px; border-top:1px dashed #ddd; padding-top:4px;"></div>`;
+                    
+                    let mergedMap = {};
+                    let classIdsMap = {};
+                    slotClasses.forEach(c => {
+                        if(!mergedMap[c.teacherId]) { mergedMap[c.teacherId] = []; classIdsMap[c.teacherId] = []; }
+                        c.studentIds.forEach(sid => { if(!mergedMap[c.teacherId].includes(sid)) mergedMap[c.teacherId].push(sid); });
+                        classIdsMap[c.teacherId].push(c.id);
+                    });
+
+                    for(let tId in mergedMap) {
+                        let t = teachers.find(teach => teach.id === tId);
+                        let sNames = mergedMap[tId].map(sid => { let s=students.find(st=>st.id===sid); return s?s.name:''; }).join(', ');
+                        if(t) {
+                            cellHtml += `<div class="assigned-box" style="background-color: ${t.color};" onclick="event.stopPropagation();">
+                                <button class="no-print del-class" onclick="deleteMergedClass('${classIdsMap[tId].join(',')}', event)">×</button>
+                                <strong>授課：${t.name}(${t.subject})</strong><br>
+                                <span>👥 [${sNames}]</span>
+                            </div>`;
+                        }
+                    }
+                }
+                
+                cellHtml += `</div>`;
+                row += `<td>${cellHtml}</td>`;
+            }
+            row += `</tr>`;
+            body.innerHTML += row;
+        });
+
+        renderPrintSection();
+    }
+
+    function deleteMergedClass(idsString, e) {
+        if(e) e.stopPropagation();
+        let idsArray = idsString.split(',');
+        classes = classes.filter(c => !idsArray.includes(c.id));
+        updateHours();
+        renderTeachers();
+        renderMainTimetable();
+    }
+
+    function openScheduleModal(day, period) {
+        curDay = day; curPeriod = period;
+        let showText = (period === "L") ? "午休時段" : `第${period}節`;
+        document.getElementById('modalTitle').innerText = `週${days[day-1]} ${showText} 抽離排課指派`;
+        
+        const tSelect = document.getElementById('modalTeacher');
+        tSelect.innerHTML = '<option value="">--請選擇老師--</option>';
+        
+        teachers.forEach(t => {
+            if (currentTabFilter !== 'all' && t.subject !== currentTabFilter) return;
+            let curClassCount = classes.filter(c => c.day === day && c.period === period && c.teacherId === t.id).length;
+            let statusText = curClassCount > 0 ? ` (此節已配課)` : '';
+            tSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.subject})${statusText}</option>`;
+        });
+
+        onModalTeacherChange();
+        document.getElementById('scheduleModal').style.display = 'flex';
+    }
+
+    function onModalTeacherChange() {
+        const tId = document.getElementById('modalTeacher').value;
+        const grid = document.getElementById('modalStuGrid');
+        const hint = document.getElementById('subjectHint');
+        grid.innerHTML = '';
+        if(!tId) { hint.innerText = "請先選擇老師以媒合對應科目學生"; return; }
+
+        let teacher = teachers.find(t => t.id === tId);
+        let sub = teacher.subject;
+        hint.innerText = `💡 系統已自動為您撈出此節原班是「${sub}」的所有學生：`;
+
+        const key = `${curDay}-${curPeriod}`;
+        let availableStudents = students.filter(s => s.schedule[key] === sub);
+        if(availableStudents.length === 0) {
+            grid.innerHTML = `<span style="color:var(--danger); grid-column: 1/-1;">此時段沒有學生的原班科目是「${sub}」喔！</span>`;
+            return;
+        }
+        availableStudents.sort((a,b)=>a.grade.localeCompare(b.grade));
+
+        let currentTeacherClass = classes.filter(c => c.day === curDay && c.period === curPeriod && c.teacherId === tId);
+        let alreadyCheckedIds = [];
+        currentTeacherClass.forEach(c => alreadyCheckedIds = alreadyCheckedIds.concat(c.studentIds));
+
+        availableStudents.forEach(s => {
+            let isBusyWithOther = classes.some(c => c.day === curDay && c.period === curPeriod && c.teacherId !== tId && c.studentIds.includes(s.id));
+            let isChecked = alreadyCheckedIds.includes(s.id);
+            let checkAttr = isBusyWithOther ? 'disabled' : (isChecked ? 'checked' : '');
+            let busyText = isBusyWithOther ? ' (⚠️此節已被其他老師排課)' : '';
+
+            grid.innerHTML += `<div>
+                <input type="checkbox" name="mStudents" value="${s.id}" id="mchk-${s.id}" ${checkAttr} style="width:auto; margin-right:5px;">
+                <label for="mchk-${s.id}" style="${isBusyWithOther?'color:#aaa;':''}">[${s.grade}] <strong>${s.name}</strong>${busyText}</label>
+            </div>`;
+        });
+    }
+
+    function saveClass() {
+        const tId = document.getElementById('modalTeacher').value;
+        if(!tId) return alert('請選擇負責老師');
+        const checkboxes = document.querySelectorAll('input[name="mStudents"]:checked');
+        let sIds = Array.from(checkboxes).map(cb => cb.value);
+
+        classes = classes.filter(c => !(c.day === curDay && c.period === curPeriod && c.teacherId === tId));
+        if(sIds.length > 0) {
+            classes.push({ id: 'c_' + Date.now(), day: curDay, period: curPeriod, teacherId: tId, studentIds: sIds });
+        }
+        updateHours();
+        renderTeachers();
+        renderMainTimetable();
+        closeModal();
+    }
+
+    function closeModal() { document.getElementById('scheduleModal').style.display = 'none'; }
+
+    function switchPrintGroup(groupKey) {
+        document.querySelectorAll('.print-tabs-wrapper .tab-btn').forEach(btn => btn.classList.remove('active'));
+        const subTabs = document.getElementById('printTeacherSubTabs');
+        
+        if(groupKey === 'teachers') {
+            document.getElementById('pTabBtn-teachers').classList.add('active');
+            subTabs.style.display = 'flex';
+            if(teachers.length > 0) {
+                switchPrintActiveCard(`print-card-teacher-${teachers[0].id}`);
+                document.querySelectorAll('.sub-tab-btn').forEach((b,i) => {
+                    if(i===0) b.classList.add('active'); else b.classList.remove('active');
+                });
+            }
+        } else {
+            document.getElementById(`pTabBtn-${groupKey}`).classList.add('active');
+            subTabs.style.display = 'none';
+            switchPrintActiveCard(`print-card-${groupKey}`);
+        }
+    }
+
+    function switchPrintActiveCard(cardId) {
+        currentPrintActiveId = cardId;
+        document.querySelectorAll('.print-preview-card').forEach(card => {
+            if(card.id === cardId) card.classList.add('active');
+            else card.classList.remove('active');
+        });
+    }
+
+    function renderPrintSection() {
+        const out = document.getElementById('printOutputArea');
+        const subTabsContainer = document.getElementById('printTeacherSubTabs');
+        out.innerHTML = '';
+        
+        const subjects = ['國文', '英文', '數學'];
+        subjects.forEach(sub => {
+            let cardId = `print-card-sub-${sub}`;
+            let html = `
+                <div class="print-preview-card ${currentPrintActiveId===cardId?'active':''}" id="${cardId}">
+                    <h4>
+                        <span>📘 ${sub}科 抽離整體總課表</span>
+                        <button class="no-print" onclick="printSingleTable('${cardId}')" style="width:auto; padding:4px 12px; background:#8e44ad; font-size:12px;">🖨️ 單獨列印此表</button>
+                    </h4>
+                    <div class="print-single-only" style="font-weight:bold; font-size:18px; margin-bottom:10px; text-align:center;">
+                        特教抽離班學科總課表 ——— 【${sub}科總表】
+                    </div>
+                    <table class="timetable">
+                        <thead><tr><th style="width:100px;">節次</th><th>週一</th><th>週二</th><th>週三</th><th>週四</th><th>週五</th></tr></thead>
+                        <tbody>`;
+            
+            periodKeys.forEach(p => {
+                let rowClass = (p === "L") ? 'class="lunch-row"' : '';
+                html += `<tr ${rowClass}><td class="time-col">${timeLabelsMap[p]}</td>`;
+                for(let d=1; d<=5; d++) {
+                    let slotClasses = classes.filter(c => {
+                        let t = teachers.find(teach => teach.id === c.teacherId);
+                        return c.day === d && c.period === p && t && t.subject === sub;
+                    });
+                    
+                    html += `<td>`;
+                    if(slotClasses.length > 0) {
+                        let merged = {};
+                        slotClasses.forEach(c => {
+                            if(!merged[c.teacherId]) merged[c.teacherId] = [];
+                            c.studentIds.forEach(sid => { if(!merged[c.teacherId].includes(sid)) merged[c.teacherId].push(sid); });
+                        });
+                        for(let tId in merged) {
+                            let t = teachers.find(teach => teach.id === tId);
+                            let sNames = merged[tId].map(sid => { let s=students.find(st=>st.id===sid); return s?s.name:''; }).join(',');
+                            html += `<div class="assigned-box"><strong>${t.name} 老師</strong><br>👥 [${sNames}]</div>`;
+                        }
+                    }
+                    html += `</td>`;
+                }
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+            out.innerHTML += html;
+        });
+
+        subTabsContainer.innerHTML = '';
+        teachers.forEach((t, index) => {
+            let cardId = `print-card-teacher-${t.id}`;
+            let isBtnActive = (currentPrintActiveId === cardId);
+            subTabsContainer.innerHTML += `<button class="sub-tab-btn ${isBtnActive?'active':''}" onclick="document.querySelectorAll('.sub-tab-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active'); switchPrintActiveCard('${cardId}')">${t.name}(${t.subject})</button>`;
+
+            let html = `
+                <div class="print-preview-card ${currentPrintActiveId===cardId?'active':''}" id="${cardId}">
+                    <h4>
+                        <span>👨‍🏫 ${t.name} 老師個人課表 (${t.subject}科)</span>
+                        <button class="no-print" onclick="printSingleTable('${cardId}')" style="width:auto; padding:4px 12px; background:#8e44ad; font-size:12px;">🖨️ 單獨列印此表</button>
+                    </h4>
+                    <div class="print-single-only" style="font-weight:bold; font-size:18px; margin-bottom:10px; text-align:center;">
+                        特教抽離班個人課表 ——— 【${t.name} 老師 (${t.subject}科)】
+                    </div>
+                    <table class="timetable">
+                        <thead><tr><th style="width:100px;">節次</th><th>週一</th><th>週二</th><th>週三</th><th>週四</th><th>週五</th></tr></thead>
+                        <tbody>`;
+            
+            periodKeys.forEach(p => {
+                let rowClass = (p === "L") ? 'class="lunch-row"' : '';
+                html += `<tr ${rowClass}><td class="time-col">${timeLabelsMap[p]}</td>`;
+                for(let d=1; d<=5; d++) {
+                    let slotClasses = classes.filter(c => c.day === d && c.period === p && c.teacherId === t.id);
+                    html += `<td>`;
+                    if(slotClasses.length > 0) {
+                        let allStudents = [];
+                        slotClasses.forEach(c => {
+                            c.studentIds.forEach(sid => { if(!allStudents.includes(sid)) allStudents.push(sid); });
+                        });
+                        let sNames = allStudents.map(sid => { let s=students.find(st=>st.id===sid); return s?s.name:''; }).join(', ');
+                        html += `<div class="assigned-box" style="background-color:${t.color}; border-left:4px solid var(--accent);">
+                            <strong>${t.subject}抽離班</strong><br>學生: [${sNames}]
+                        </div>`;
+                    }
+                    html += `</td>`;
+                }
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+            out.innerHTML += html;
+        });
+    }
+
+    function printSingleTable(cardId) {
+        document.body.classList.add('print-target-active');
+        const card = document.getElementById(cardId);
+        card.classList.add('currently-printing');
+        window.print();
+        document.body.classList.remove('print-target-active');
+        card.classList.remove('currently-printing');
+    }
+</script>
+
+</body>
+</html>
